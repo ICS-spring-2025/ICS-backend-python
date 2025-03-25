@@ -23,22 +23,22 @@ swagger_config = {
 Swagger(app, config=swagger_config)
 
 
-@app.route('/app/events/<float:start_time>/<float:end_time>', methods=['GET'])
-def get_events_controller(start_time: float, end_time: float) -> Union[Response, tuple[Response, int]]:
+@app.route('/app/events/<int:start_time>/<int:end_time>', methods=['GET'])
+def get_events_controller(start_time: int, end_time: int) -> Union[Response, tuple[Response, int]]:
     """
     Get all events within a time range
     ---
     parameters:
       - name: start_time
         in: path
-        type: number
-        format: float
+        type: integer
+        format: int64
         required: true
         description: Start timestamp in nanoseconds
       - name: end_time
         in: path
-        type: number
-        format: float
+        type: integer
+        format: int64
         required: true
         description: End timestamp in nanoseconds
     responses:
@@ -60,8 +60,8 @@ def get_events_controller(start_time: float, end_time: float) -> Union[Response,
                 items:
                   type: array
                   items:
-                    type: number
-                    format: float
+                    type: integer
+                    format: int64
                     description: [timestamp in nanoseconds, data]
     """
     try:
@@ -69,14 +69,14 @@ def get_events_controller(start_time: float, end_time: float) -> Union[Response,
         return jsonify([{
             'id': event.id,
             'name': event.name,
-            'records': [[float(ts), data] for ts, data in event.records]
+            'records': [[int(ts), data] for ts, data in event.records]
         } for event in events])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/app/events/<int:event_id>/<float:start_time>/<float:end_time>', methods=['GET'])
-def get_event_by_id_controller(event_id: int, start_time: float, end_time: float) -> Union[tuple[Response, int], Response]:
+@app.route('/app/events/<int:event_id>/<int:start_time>/<int:end_time>', methods=['GET'])
+def get_event_by_id_controller(event_id: int, start_time: int, end_time: int) -> Union[tuple[Response, int], Response]:
     """
     Get a specific event by ID within a time range
     ---
@@ -88,14 +88,14 @@ def get_event_by_id_controller(event_id: int, start_time: float, end_time: float
         description: Event ID to filter by
       - name: start_time
         in: path
-        type: number
-        format: float
+        type: integer
+        format: int64
         required: true
         description: Start timestamp in nanoseconds
       - name: end_time
         in: path
-        type: number
-        format: float
+        type: integer
+        format: int64
         required: true
         description: End timestamp in nanoseconds
     responses:
@@ -115,8 +115,8 @@ def get_event_by_id_controller(event_id: int, start_time: float, end_time: float
               items:
                 type: array
                 items:
-                  type: number
-                  format: float
+                  type: integer
+                  format: int64
                   description: [timestamp in nanoseconds, data]
       404:
         description: Event not found
@@ -129,7 +129,7 @@ def get_event_by_id_controller(event_id: int, start_time: float, end_time: float
         return jsonify({
             'id': event.id,
             'name': event.name,
-            'records': [[float(ts), data] for ts, data in event.records]
+            'records': [[int(ts), data] for ts, data in event.records]
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
