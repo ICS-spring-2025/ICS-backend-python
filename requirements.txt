@@ -1,3 +1,3 @@
-flask
+flask~=3.1.0
 flask-swagger
-flasgger
+flasgger~=0.9.7.1
