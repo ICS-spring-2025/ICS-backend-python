@@ -1,6 +1,5 @@
 import struct
-from structure import store
-from structure import *
+from structure import store, event, add_record_to_event, EventNotFoundError
 
 attributes_struct = {
             "uint64": "Q",
@@ -19,12 +18,12 @@ log_format = {
     "data": "uint32"     
 }
 
-def build_struct_format(log_format):
+def build_struct_format(log_format: dict[str, str]) -> str:
     struct_format = "<" + "".join(attributes_struct[log_format[field]] for field in log_format)
     return struct_format
 
 
-def parse_log(struct_format, log_format, log):
+def parse_log(struct_format: dict[str, str] , log_format: dict[str, str] , log: bytes) -> None:
     values = struct.unpack(struct_format, log)
     log = dict(zip(log_format.keys(), values))
 
@@ -36,12 +35,10 @@ def parse_log(struct_format, log_format, log):
         add_record_to_event(event_id, timestamp, data)
     else:
         store[event_id] = event(event_id, timestamp, data)
-
-        
-
+    
 
 
-def parse_file(filename):
+def parse_file(filename: str) -> None:
     struct_format = build_struct_format(log_format)
     log_size = struct.calcsize(struct_format)
     
