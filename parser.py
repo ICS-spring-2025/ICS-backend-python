@@ -1,6 +1,6 @@
 import struct
 from structure import store, event, add_record_to_event, EventNotFoundError
-
+dumb_memory_path = "./trace_dump.bin"
 attributes_struct = {
             "uint64": "Q",
             "uint32": "I",
@@ -50,4 +50,5 @@ def parse_file(filename: str) -> None:
                 parse_log(struct_format, log_format, log)
             except EventNotFoundError as e:
                 break 
-    
+
+
