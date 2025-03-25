@@ -6,8 +6,7 @@ dumb_memory_path = "."
 class Event:
     id: int
     name: str
-    timestamps: list[float]
-    data: int
+    records: list[tuple[float, int]]
     
 store: dict[int, Event] = {}
 
@@ -92,13 +91,9 @@ name_events = {
 }
 
 
-def event(id: int, timestamps: list[float], data: int) -> Event:
+def event(id: int, timestamp: float, data: int) -> Event:
     return Event(
         id=id,
         name=name_events.get(id),
-        timestamps=timestamps,
-        data=data
-    ) 
-
-
-
+        records=[(timestamp, data)]
+    )
