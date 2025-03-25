@@ -1,7 +1,8 @@
-from flask import Flask, jsonify, Response
-from flasgger import Swagger
 from typing import Union
-from service import get_events, get_event_by_id
+
+from flasgger import Swagger
+from flask import Flask, Response, jsonify
+from service import get_event_by_id, get_events
 
 app = Flask(__name__)
 
@@ -9,21 +10,21 @@ swagger_config = {
     "headers": [],
     "specs": [
         {
-            "endpoint": 'apispec_1',
-            "route": '/apispec_1.json',
+            "endpoint": "apispec_1",
+            "route": "/apispec_1.json",
             "rule_filter": lambda rule: True,
             "model_filter": lambda tag: True,
         }
     ],
     "static_url_path": "/flasgger_static",
     "swagger_ui": True,
-    "specs_route": "/apidocs/"
+    "specs_route": "/apidocs/",
 }
 
 Swagger(app, config=swagger_config)
 
 
-@app.route('/app/events/<int:start_time>/<int:end_time>', methods=['GET'])
+@app.route("/app/events/<int:start_time>/<int:end_time>", methods=["GET"])
 def get_events_controller(start_time: int, end_time: int) -> Union[Response, tuple[Response, int]]:
     """
     Get all events within a time range
@@ -66,16 +67,17 @@ def get_events_controller(start_time: int, end_time: int) -> Union[Response, tup
     """
     try:
         events = get_events(start_time, end_time)
-        return jsonify([{
-            'id': event.id,
-            'name': event.name,
-            'records': [[int(ts), data] for ts, data in event.records]
-        } for event in events])
+        return jsonify(
+            [
+                {"id": event.id, "name": event.name, "records": [[int(ts), data] for ts, data in event.records]}
+                for event in events
+            ]
+        )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/app/events/<int:event_id>/<int:start_time>/<int:end_time>', methods=['GET'])
+@app.route("/app/events/<int:event_id>/<int:start_time>/<int:end_time>", methods=["GET"])
 def get_event_by_id_controller(event_id: int, start_time: int, end_time: int) -> Union[tuple[Response, int], Response]:
     """
     Get a specific event by ID within a time range
@@ -124,16 +126,12 @@ def get_event_by_id_controller(event_id: int, start_time: int, end_time: int) ->
     try:
         event = get_event_by_id(event_id, start_time, end_time)
         if not event:
-            return jsonify({'error': 'Event not found'}), 404
+            return jsonify({"error": "Event not found"}), 404
 
-        return jsonify({
-            'id': event.id,
-            'name': event.name,
-            'records': [[int(ts), data] for ts, data in event.records]
-        })
+        return jsonify({"id": event.id, "name": event.name, "records": [[int(ts), data] for ts, data in event.records]})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
