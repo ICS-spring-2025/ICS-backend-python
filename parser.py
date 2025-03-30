@@ -10,15 +10,17 @@ attributes_struct = {
     "int64": "q",
     "int32": "i",
     "int16": "h",
-    "int8": "b",
+    "int8": "b"
 }
 
-log_format = {"timestamp": "uint64", "event_id": "uint8", "data": "uint32"}
-
+log_format = {
+    "timestamp": "uint64",
+    "event_id": "uint8",
+    "data": "uint32"
+}
 
 def build_struct_format(log_format: dict[str, str]) -> str:
     return "<" + "".join(attributes_struct[log_format[field]] for field in log_format)
-
 
 
 def parse_log(struct_format: dict[str, str], log_format: dict[str, str], log: bytes) -> None:
