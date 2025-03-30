@@ -19,19 +19,15 @@ class EventNotFoundError(Exception):
     pass
 
 
-def event(event_id: int, timestamp: float, data: int) -> Event:
-    name = name_events.get(event_id)
+def event(id: int, timestamp: float, data: int) -> Event:
+    name = name_events.get(id)
     if name is None:
         raise EventNotFoundError(f"Event with id {id} not found in name_events")
 
-    return Event(
-        id=id,
-        name=name,
-        records=[(timestamp, data)]
-    )
+    return Event(id=id, name=name, records=[(timestamp, data)])
 
 
 def add_record_to_event(id: int, timestamp: float, data: int) -> None:
     event = store.get(id)
     event.records.append((timestamp, data))
-    store[event_id] = event
+    store[id] = event

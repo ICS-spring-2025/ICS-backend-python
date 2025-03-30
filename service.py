@@ -1,7 +1,9 @@
-from typing import List, Union
-from structure import store, Event
+from typing import Union
 
-def get_events(start_time: int, end_time: int) -> List[Event]:
+from structure import Event, store
+
+
+def get_events(start_time: int, end_time: int) -> list[Event]:
     filtered_events = []
     for event in store.values():
         event.records = [record for record in event.records if start_time <= record[0] <= end_time]
