@@ -1,29 +1,30 @@
 import struct
 from structure import store, event, add_record_to_event, EventNotFoundError
-dumb_memory_path = "./trace_dump.bin"
+
 attributes_struct = {
-            "uint64": "Q",
-            "uint32": "I",
-            "uint16": "H",
-            "uint8": "B",
-            "int64": "q",
-            "int32": "i",
-            "int16": "h",
-            "int8": "b"
-        }
+    "uint64": "Q",
+    "uint32": "I",
+    "uint16": "H",
+    "uint8": "B",
+    "int64": "q",
+    "int32": "i",
+    "int16": "h",
+    "int8": "b"
+}
 
 log_format = {
-    "timestamp": "uint64",  
-    "event_id": "uint8",   
-    "data": "uint32"     
+    "timestamp": "uint64",
+    "event_id": "uint8",
+    "data": "uint32"
 }
+
 
 def build_struct_format(log_format: dict[str, str]) -> str:
     struct_format = "<" + "".join(attributes_struct[log_format[field]] for field in log_format)
     return struct_format
 
 
-def parse_log(struct_format: dict[str, str] , log_format: dict[str, str] , log: bytes) -> None:
+def parse_log(struct_format: dict[str, str], log_format: dict[str, str], log: bytes) -> None:
     values = struct.unpack(struct_format, log)
     log = dict(zip(log_format.keys(), values))
 
@@ -35,20 +36,17 @@ def parse_log(struct_format: dict[str, str] , log_format: dict[str, str] , log: 
         add_record_to_event(event_id, timestamp, data)
     else:
         store[event_id] = event(event_id, timestamp, data)
-    
 
 
 def parse_file(filename: str) -> None:
     struct_format = build_struct_format(log_format)
     log_size = struct.calcsize(struct_format)
-    
+
     with open(filename, "rb") as f:
-        while log := f.read(log_size): 
+        while log := f.read(log_size):
             if len(log) < log_size:
-                break  
+                break
             try:
                 parse_log(struct_format, log_format, log)
             except EventNotFoundError as e:
-                break 
-
-
+                break
