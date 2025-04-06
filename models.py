@@ -19,11 +19,77 @@ class InstantEvent(LittleEndianStructure):
         return id(self)
 
 
+class _EventsIter:
+    def __init__(
+            self,
+            lst_events,
+            *,
+            timestamp__gte: int = None,
+            timestamp__lte: int = None,
+            event_id: int = None,
+        ):
+        self._lst_events_iter = iter(lst_events)
+        self._timestamp__gte = timestamp__gte
+        self._timestamp__lte = timestamp__lte
+        self._event_id = event_id
+
+    def __next__(self):
+        while (True):
+            instant_event = next(self._lst_events_iter)
+            if instant_event.event_id == 0:
+                raise StopIteration
+            if self._event_id is not None and instant_event.event_id != self._event_id:
+                continue
+            if self._timestamp__gte is not None and instant_event.timestamp < self._timestamp__gte:
+                continue
+            if self._timestamp__lte is not None and instant_event.timestamp > self._timestamp__lte:
+                raise StopIteration
+            return instant_event
+
+
+class Events:
+    def __init__(self, lst_events):
+        self._lst_events = lst_events
+        self._timestamp__gte = None
+        self._timestamp__lte = None
+        self._event_id = None
+
+    def filter(self, *,
+            timestamp__gte: int = None,
+            timestamp__lte: int = None,
+            event_id: int = None,
+        ):
+        events = copy.copy(self)
+        if event_id:
+            events._event_id = event_id
+        if timestamp__gte:
+            events._timestamp__gte = max(events._timestamp__gte, __timestamp__gte) if events._timestamp__gte else timestamp__gte
+        if timestamp__lte:
+            events._timestamp__lte = min(events._timestamp__lte, __timestamp__lte) if events._timestamp__lte else timestamp__lte
+        return events
+
+    def __iter__(self):
+        return _EventsIter(
+            lst_events = self._lst_events,
+            timestamp__gte = self._timestamp__gte,
+            timestamp__lte = self._timestamp__lte,
+            event_id = self._event_id
+        )
+
+
 class _DumpIter:
-    def __init__(self, filename: str, timestamp__gte: int = None, timestamp__lte: int = None):
+    def __init__(
+            self,
+            filename: str,
+            *,
+            timestamp__gte: int = None,
+            timestamp__lte: int = None,
+            event_id: int = None,
+        ):
         self.file = open(filename, "rb")
-        self.timestamp__gte = timestamp__gte
-        self.timestamp__lte = timestamp__lte
+        self._timestamp__gte = timestamp__gte
+        self._timestamp__lte = timestamp__lte
+        self._event_id = event_id
 
     def __next__(self):
         if self.file is None:
@@ -40,9 +106,9 @@ class _DumpIter:
                 memmove(addressof(instant_event), log, sizeof(InstantEvent))
                 if instant_event.event_id == 0:
                     raise StopIteration # NOTE: Предполагается dump по умолчанию заполнен нулями и сбытия с id = 0 не существует
-                if self.timestamp__gte is not None and instant_event.timestamp < self.timestamp__gte:
+                if self._timestamp__gte is not None and instant_event.timestamp < self._timestamp__gte:
                     continue
-                if self.timestamp__lte is not None and instant_event.timestamp > self.timestamp__lte:
+                if self._timestamp__lte is not None and instant_event.timestamp > self._timestamp__lte:
                     continue # NOTE: Если гарантироавнно next.timestamp >= prev.timestamp, то заменить на raise StopIteration
                 return instant_event
             except EOFError:
@@ -52,34 +118,49 @@ class _DumpIter:
         if self.file:
             self.file.close()
 
-class Dump:
-    """
-    Example:
 
-    dump = Dump(<filename>).filter(timestamp__gte=<start_time>, timestamp__lte=<stop_time>)
-    for event in dump:
-        print(event)
-    """
-    def __init__(self, filename: str):
-        self.filename = filename
-        self.timestamp__gte = None
-        self.timestamp__lte = None
+class Dump:
+    def __init__(self):
+        self._filename = None
+        self._timestamp__gte = None
+        self._timestamp__lte = None
+        self._event_id = None
+
+    def get_filename(self):
+        return self._filename
+
+    @staticmethod
+    def get(filename):
+        dump = Dump()
+        dump._filename = filename
+        return dump
+
+    def get_events(self):
+        lst_events = []
+        for event in self:
+            lst_events.append(event)
+        return Events(
+            lst_events = lst_events,
+        ).filter(
+            timestamp__gte = self._timestamp__gte,
+            timestamp__lte = self._timestamp__lte,
+            event_id = self._event_id
+        )
 
     def filter(self, *, timestamp__gte: int = None, timestamp__lte: int = None):
         dump = copy.copy(self)
         if timestamp__gte:
-            dump.timestamp__gte = max(dump.timestamp__gte, timestamp__gte) if dump.timestamp__gte else timestamp__gte
+            dump._timestamp__gte = max(dump._timestamp__gte, timestamp__gte) if dump._timestamp__gte else timestamp__gte
         if timestamp__lte:
-            dump.timestamp__lte = min(dump.timestamp__lte, timestamp__lte) if dump.timestamp__lte else timestamp__lte
+            dump._timestamp__lte = min(dump._timestamp__lte, timestamp__lte) if dump._timestamp__lte else timestamp__lte
+        if event_id:
+            dump.event_id = event_id
         return dump
 
     def __iter__(self):
         return _DumpIter(
-            filename = self.filename,
-            timestamp__gte = self.timestamp__gte,
-            timestamp__lte = self.timestamp__lte,
+            filename = self._filename,
+            timestamp__gte = self._timestamp__gte,
+            timestamp__lte = self._timestamp__lte,
+            event_id = self._event_id
         )
-
-
-
-

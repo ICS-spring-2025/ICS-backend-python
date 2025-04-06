@@ -120,7 +120,8 @@ def get_event_by_id_controller(event_id: int, start_time: int, end_time: int) ->
         description: Event not found
     """
     try:
-        return jsonify({'error': "Coming soon..."}), 500
+        events = rest_views.get_event_by_id(event_id, start_time, end_time)
+        return jsonify(events)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

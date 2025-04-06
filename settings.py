@@ -1,4 +1,5 @@
 from event_registers import instant_event_register, ranged_event_register
+from models import Dump
 
 instant_events = {
     128: "instant_event_128",
@@ -18,3 +19,5 @@ instant_event_register.register_events(instant_events)
 ranged_event_register.register_events(ranged_events)
 
 dump_filename = "trace_dump.bin"
+
+store = Dump.get(dump_filename).get_events()
