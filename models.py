@@ -15,6 +15,9 @@ class InstantEvent(LittleEndianStructure):
     def __repr__(self):
         return f"{self.__class__.__name__}(timestamp={self.timestamp}, event_id={self.event_id}, data={self.data})"
 
+    def __hash__(self):
+        return id(self)
+
 
 class _DumpIter:
     def __init__(self, filename: str, timestamp__gte: int = None, timestamp__lte: int = None):
