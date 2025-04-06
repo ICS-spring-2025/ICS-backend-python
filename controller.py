@@ -1,8 +1,8 @@
 from typing import Union
-from flasgger import Swagger
-from flask import Flask, Response, jsonify
 
 import rest_views
+from flasgger import Swagger
+from flask import Flask, Response, jsonify
 
 app = Flask(__name__)
 
@@ -126,5 +126,5 @@ def get_event_by_id_controller(event_id: int, start_time: int, end_time: int) ->
         return jsonify({"error": str(e)}), 500
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)

@@ -1,20 +1,21 @@
-from typing import Iterator, Dict, Any, Tuple, List
+from collections.abc import Iterator
+from typing import Any
+
 from models import InstantEvent, _DumpIter
-from models import Dump
 from settings import instant_event_register, ranged_event_register
 
 _ier = instant_event_register
 _rer = ranged_event_register
 
 
-def wrapper(iterator: Iterator[_DumpIter]) -> Iterator[Dict[str, Any]]:
+def wrapper(iterator: Iterator[_DumpIter]) -> Iterator[dict[str, Any]]:
     for event in iterator:
         yield (event, {})
 
 
-def instant(iterator: Iterator[Tuple[InstantEvent, Dict]]) -> Iterator[Dict[str, Any]]:
+def instant(iterator: Iterator[tuple[InstantEvent, dict]]) -> Iterator[dict[str, Any]]:
     for event, data in iterator:
-        if not(event.event_id in _ier):
+        if event.event_id not in _ier:
             yield event, data
             continue
         # print(f"instant {event}, {data}")
@@ -22,7 +23,7 @@ def instant(iterator: Iterator[Tuple[InstantEvent, Dict]]) -> Iterator[Dict[str,
         yield event, data
 
 
-def ranged(iterator: Iterator[Tuple[InstantEvent, Dict]]) -> Iterator[Dict[str, Any]]:
+def ranged(iterator: Iterator[tuple[InstantEvent, dict]]) -> Iterator[dict[str, Any]]:
     ranged_data = None
     started_events = set()
     ended_events = set()
@@ -31,18 +32,24 @@ def ranged(iterator: Iterator[Tuple[InstantEvent, Dict]]) -> Iterator[Dict[str, 
             # Если у event есть possible begins, то смотрим в started_events, возмжно event является концом rangedEvent
             if possible_begins := _rer.get_possible_begins(event.event_id):
                 # Список started_events, которые ожидают завершающего события с id=event_id (possible ends)
-                lstPBs = list(filter(lambda started_event:
-                    possible_begins.intersection(_rer.get_possible_ends(started_event.event_id)),
-                    started_events)
+                lst_possible_begins = list(
+                    filter(
+                        lambda started_event: possible_begins.intersection(
+                            _rer.get_possible_ends(started_event.event_id)
+                        ),
+                        started_events,
+                    )
                 )
                 # Если ожидают завершения события (нашего event) больше одного, то имеет место быть наложение.
                 # Время писать свой обработчик)
-                if len(lstPBs) > 1:
-                    raise Exception("Лёня, а я говорил. Если ожидают завершения события (нашего event) больше одного, то имеет место быть наложение. Время писать свой обработчик)")
+                if len(lst_possible_begins) > 1:
+                    raise Exception(
+                        "Лёня, а я говорил. Если ожидают завершения события (нашего event) больше одного, то имеет место быть наложение. Время писать свой обработчик)"
+                    )
                 # Завершение rangedEvent
-                elif len(lstPBs) == 1:
-                    started_events.remove(lstPBs[0])
-                    ranged_data = {"start": lstPBs[0], "stop": event}
+                elif len(lst_possible_begins) == 1:
+                    started_events.remove(lst_possible_begins[0])
+                    ranged_data = {"start": lst_possible_begins[0], "stop": event}
                     data["ranged"] = ranged_data
                     yield event, data
                     continue
@@ -61,7 +68,7 @@ def ranged(iterator: Iterator[Tuple[InstantEvent, Dict]]) -> Iterator[Dict[str, 
 
 
 # to_dict(ranged(instant(wrapper(Dump(<filename>)))))
-def to_dict(iterator: Iterator[Tuple[InstantEvent, Dict]]) -> str:
+def to_dict(iterator: Iterator[tuple[InstantEvent, dict]]) -> str:
     res = {
         "instant": [],
         "ranged": [],
@@ -76,16 +83,17 @@ def to_dict(iterator: Iterator[Tuple[InstantEvent, Dict]]) -> str:
             instant[event_id].append((data["instant"].timestamp, data["instant"].data))
         elif "ranged" in data:
             start_event = data["ranged"]["start"]
-            stop_event = data["ranged"]["stop"]
+            data["ranged"]["stop"]
             if start_event.event_id not in ranged:
                 ranged[start_event.event_id] = list()
-            ranged[start_event.event_id].append((
+            ranged[start_event.event_id].append(
+                (
                     data["ranged"]["start"].timestamp,
                     data["ranged"]["start"].data,
                     data["ranged"]["stop"].event_id,
                     _rer.get_event_name(data["ranged"]["stop"].event_id),
                     data["ranged"]["stop"].timestamp,
-                    data["ranged"]["stop"].data
+                    data["ranged"]["stop"].data,
                 )
             )
     for k, v in instant.items():
@@ -105,4 +113,3 @@ def to_dict(iterator: Iterator[Tuple[InstantEvent, Dict]]) -> str:
             }
         )
     return res
-
