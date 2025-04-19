@@ -126,5 +126,23 @@ def get_event_by_id_controller(event_id: int, start_time: int, end_time: int) ->
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/app/events", methods=["GET"])
+def get_all_events_controller() -> Union[Response, tuple[Response, int]]:
+    """
+    Get a specific event by ID within a time range
+    ---
+    responses:
+      200:
+        description: All events
+      404:
+        description: Event not found
+    """
+    try:
+        events = rest_views.get_all_events()
+        return jsonify(events)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True)

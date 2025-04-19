@@ -55,6 +55,9 @@ class Events:
         self._timestamp__lte = None
         self._event_id = None
 
+    def get(self):
+        return copy.copy(self)
+
     def filter(
         self,
         *,

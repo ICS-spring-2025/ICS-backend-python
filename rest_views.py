@@ -1,4 +1,3 @@
-
 import event_formatter
 from settings import store
 
@@ -26,4 +25,10 @@ def get_event_by_id(event_id: int, start_time: int, stop_time: int) -> dict:
                 )
             )
         )
+    )
+
+
+def get_all_events() -> dict:
+    return event_formatter.to_dict(
+        event_formatter.ranged(event_formatter.instant(event_formatter.wrapper(store.get())))
     )

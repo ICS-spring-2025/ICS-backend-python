@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from typing import Any
 
 from models import InstantEvent, _DumpIter
@@ -8,12 +8,12 @@ _ier = instant_event_register
 _rer = ranged_event_register
 
 
-def wrapper(iterator: Iterator[_DumpIter]) -> Iterator[dict[str, Any]]:
+def wrapper(iterator: Generator[_DumpIter]) -> Generator[tuple[InstantEvent, dict[Any, Any]], None, None]:
     for event in iterator:
-        yield (event, {})
+        yield event, {}
 
 
-def instant(iterator: Iterator[tuple[InstantEvent, dict]]) -> Iterator[dict[str, Any]]:
+def instant(iterator: Generator[tuple[InstantEvent, dict]]) -> Generator[tuple[InstantEvent, dict], None, None]:
     for event, data in iterator:
         if event.event_id not in _ier:
             yield event, data
@@ -23,7 +23,7 @@ def instant(iterator: Iterator[tuple[InstantEvent, dict]]) -> Iterator[dict[str,
         yield event, data
 
 
-def ranged(iterator: Iterator[tuple[InstantEvent, dict]]) -> Iterator[dict[str, Any]]:
+def ranged(iterator: Generator[tuple[InstantEvent, dict]]) -> Generator[tuple[InstantEvent, dict], None, None]:
     ranged_data = None
     started_events = set()
     ended_events = set()
@@ -68,7 +68,7 @@ def ranged(iterator: Iterator[tuple[InstantEvent, dict]]) -> Iterator[dict[str, 
 
 
 # to_dict(ranged(instant(wrapper(Dump(<filename>)))))
-def to_dict(iterator: Iterator[tuple[InstantEvent, dict]]) -> str:
+def to_dict(iterator: Iterator[tuple[InstantEvent, dict]]) -> dict[str, list[Any]]:
     res = {
         "instant": [],
         "ranged": [],
@@ -83,7 +83,6 @@ def to_dict(iterator: Iterator[tuple[InstantEvent, dict]]) -> str:
             instant[event_id].append((data["instant"].timestamp, data["instant"].data))
         elif "ranged" in data:
             start_event = data["ranged"]["start"]
-            data["ranged"]["stop"]
             if start_event.event_id not in ranged:
                 ranged[start_event.event_id] = list()
             ranged[start_event.event_id].append(
