@@ -1,8 +1,8 @@
 from typing import Union
 
+import rest_views
 from flasgger import Swagger
 from flask import Flask, Response, jsonify
-from service import get_event_by_id, get_events
 
 app = Flask(__name__)
 
@@ -65,14 +65,10 @@ def get_events_controller(start_time: int, end_time: int) -> Union[Response, tup
                     format: int64
                     description: [timestamp in nanoseconds, data]
     """
+
     try:
-        events = get_events(start_time, end_time)
-        return jsonify(
-            [
-                {"id": event.id, "name": event.name, "records": [[int(ts), data] for ts, data in event.records]}
-                for event in events
-            ]
-        )
+        events = rest_views.get_events_controller(start_time, end_time)
+        return jsonify(events)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -124,11 +120,26 @@ def get_event_by_id_controller(event_id: int, start_time: int, end_time: int) ->
         description: Event not found
     """
     try:
-        event = get_event_by_id(event_id, start_time, end_time)
-        if not event:
-            return jsonify({"error": "Event not found"}), 404
+        events = rest_views.get_event_by_id(event_id, start_time, end_time)
+        return jsonify(events)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-        return jsonify({"id": event.id, "name": event.name, "records": [[int(ts), data] for ts, data in event.records]})
+
+@app.route("/app/events", methods=["GET"])
+def get_all_events_controller() -> Union[Response, tuple[Response, int]]:
+    """
+    Get a specific event by ID within a time range
+    ---
+    responses:
+      200:
+        description: All events
+      404:
+        description: Event not found
+    """
+    try:
+        events = rest_views.get_all_events()
+        return jsonify(events)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
