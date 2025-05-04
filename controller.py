@@ -3,8 +3,10 @@ from typing import Union
 import rest_views
 from flasgger import Swagger
 from flask import Flask, Response, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 swagger_config = {
     "headers": [],
