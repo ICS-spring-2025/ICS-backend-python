@@ -137,11 +137,11 @@ def get_all_events_controller() -> Union[Response, tuple[Response, int]]:
       404:
         description: Event not found
     """
-    try:
-        events = rest_views.get_all_events()
-        return jsonify(events)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # try:
+    events = rest_views.get_all_events()
+    return jsonify(events)
+    # except Exception as e:
+    #     return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

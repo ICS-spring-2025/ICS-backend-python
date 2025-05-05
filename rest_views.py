@@ -4,7 +4,7 @@ from settings import store
 
 def get_events_controller(start_time: int = None, stop_time: int = None) -> dict:
     return event_formatter.to_dict(
-        event_formatter.ranged(
+        event_formatter.ranged_extended(
             event_formatter.instant(
                 event_formatter.wrapper(store.filter(timestamp__gte=start_time, timestamp__lte=stop_time))
             )
@@ -14,7 +14,7 @@ def get_events_controller(start_time: int = None, stop_time: int = None) -> dict
 
 def get_event_by_id(event_id: int, start_time: int, stop_time: int) -> dict:
     return event_formatter.to_dict(
-        event_formatter.ranged(
+        event_formatter.ranged_extended(
             event_formatter.instant(
                 event_formatter.wrapper(
                     store.filter(
@@ -30,5 +30,5 @@ def get_event_by_id(event_id: int, start_time: int, stop_time: int) -> dict:
 
 def get_all_events() -> dict:
     return event_formatter.to_dict(
-        event_formatter.ranged(event_formatter.instant(event_formatter.wrapper(store.get())))
+        event_formatter.ranged_extended(event_formatter.instant(event_formatter.wrapper(store.get())))
     )

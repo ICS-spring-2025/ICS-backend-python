@@ -61,6 +61,39 @@ def ranged(iterator):
     yield None, {"ranged.partial": started_events }
 
 
+def ranged_extended(iterator):
+    started_events = set()
+    info = dict()
+    for event, data in iterator:
+        event_id = event.event_id
+        if not event:
+            yield event, data
+            continue
+        if event_id in _ier:
+            for started_event in started_events:
+                info[started_event].append(event.to_dict())
+            yield event, data
+            continue
+        if event_id not in _rer:
+            yield event, data
+            continue
+        elif started_event := get_started_event_for_stop_event(started_events, event_id):
+            ranged_data = {"start": started_event, "stop": event, "info": info[started_event]}
+            started_events.remove(started_event)
+            info.pop(started_event)
+            data["ranged_extended"] = ranged_data
+            yield event, data
+            continue
+        elif _rer.get_possible_ends(event_id):
+            started_events.add(event)
+            info[event] = list()
+            yield event, data
+            continue
+        else:
+            raise Exception(f"RangedEvent {event} don't have start and end")
+    yield None, {"ranged_extended.partial": started_events }
+
+
 # to_dict(ranged(instant(wrapper(Dump(<filename>)))))
 def to_dict(iterator):
     res = {
@@ -75,18 +108,19 @@ def to_dict(iterator):
             if event_id not in instant_events:
                 instant_events[event_id] = list()
             instant_events[event_id].append((data["instant"].timestamp, data["instant"].data))
-        elif "ranged" in data:
-            start_event = data["ranged"]["start"]
+        elif "ranged_extended" in data:
+            start_event = data["ranged_extended"]["start"]
             if start_event.event_id not in ranged_events:
                 ranged_events[start_event.event_id] = list()
             ranged_events[start_event.event_id].append(
                 (
-                    data["ranged"]["start"].timestamp,
-                    data["ranged"]["start"].data,
-                    data["ranged"]["stop"].event_id,
-                    _rer.get_event_name(data["ranged"]["stop"].event_id),
-                    data["ranged"]["stop"].timestamp,
-                    data["ranged"]["stop"].data,
+                    data["ranged_extended"]["start"].timestamp,
+                    data["ranged_extended"]["start"].data,
+                    data["ranged_extended"]["stop"].event_id,
+                    _rer.get_event_name(data["ranged_extended"]["stop"].event_id),
+                    data["ranged_extended"]["stop"].timestamp,
+                    data["ranged_extended"]["stop"].data,
+                    data["ranged_extended"]["info"],
                 )
             )
 

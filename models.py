@@ -10,6 +10,9 @@ class InstantEvent(LittleEndianStructure):
         ("data", c_uint32),
     ]
 
+    def to_dict(self):
+        return {"timestamp": self.timestamp, "event_id": self.event_id, "data": self.data}
+
     def __str__(self):
         return repr(self)
 
