@@ -14,7 +14,7 @@ def get_started_event_for_stop_event(started_events, stop_event_id):
     if len(lst_possible_begins) == 0:
         return None
     if len(lst_possible_begins) > 1:
-        raise Exception("lst_possible_begins > 1")
+        raise Exception(f"lst_possible_begins({", ".join(lst_possible_begins)}) > 1, stop_event_id={stop_event_id}")
     return lst_possible_begins[0]
 
 
@@ -64,6 +64,7 @@ def ranged(iterator):
 def ranged_extended(iterator):
     started_events = set()
     info = dict()
+    stoped_events = set()
     for event, data in iterator:
         event_id = event.event_id
         if not event:
@@ -91,9 +92,12 @@ def ranged_extended(iterator):
             info[event] = list()
             yield event, data
             continue
+        elif _rer.get_possible_begins(event_id):
+            stoped_events.add(event)
+            continue
         else:
             raise Exception(f"RangedEvent {event} don't have start and end")
-    yield None, {"ranged_extended.partial": started_events }
+    yield None, {"ranged_extended.partial": started_events.union(stoped_events) }
 
 
 # to_dict(ranged(instant(wrapper(Dump(<filename>)))))
@@ -101,9 +105,11 @@ def to_dict(iterator):
     res = {
         "instant": [],
         "ranged": [],
+        "ranged.partial": []
     }
     instant_events = {}
     ranged_events = {}
+    ranged_partial_events = {}
     for event, data in iterator:
         if "instant" in data:
             event_id = data["instant"].event_id
@@ -125,6 +131,8 @@ def to_dict(iterator):
                     data["ranged_extended"]["info"],
                 )
             )
+        elif "ranged_extended.partial" in data:
+            ranged_partial_events = data["ranged_extended.partial"]
 
     for k, v in instant_events.items():
         res["instant"].append(
@@ -142,4 +150,5 @@ def to_dict(iterator):
                 "records": v,
             }
         )
+    res["ranged.partial"] = [event.to_dict() for event in list(ranged_partial_events)]
     return res
