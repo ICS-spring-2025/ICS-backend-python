@@ -71,7 +71,9 @@ def ranged_extended(iterator):
             continue
         if event_id in _ier:
             for started_event in started_events:
-                info[started_event].append(event.to_dict())
+                event_dict = event.to_dict()
+                event_dict["name"] = _ier.get_event_name(event_id)
+                info[started_event].append(event_dict)
             yield event, data
             continue
         if event_id not in _rer:
