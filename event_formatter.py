@@ -125,7 +125,6 @@ def format_v1(events_by_type):
         instant_events[event_id].append((event.timestamp, event.data))
 
     for event in events_by_type["ranged"]:
-        print(events_by_type["instant"])
         if handler := _rer.get_handler(event.start.event_id):
             handler(event, events_by_type["instant"])
         else:

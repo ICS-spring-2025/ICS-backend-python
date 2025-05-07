@@ -1,4 +1,5 @@
 import copy
+import os
 from ctypes import LittleEndianStructure, addressof, c_uint8, c_uint32, c_uint64, memmove, sizeof
 
 class InstantEvent:
@@ -137,6 +138,8 @@ class Events:
 
 
 class _DumpIter:
+    HEADER_SIZE = 0xA24
+
     def __init__(
         self,
         filename: str,
@@ -146,6 +149,7 @@ class _DumpIter:
         event_id: int = None,
     ):
         self.file = open(filename, "rb")
+        self.file.seek(_DumpIter.HEADER_SIZE, os.SEEK_SET)
         self._timestamp__gte = timestamp__gte
         self._timestamp__lte = timestamp__lte
         self._event_id = event_id

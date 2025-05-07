@@ -1,4 +1,7 @@
-name_events: dict[int, str] = {
+from event_registers import instant_event_register, ranged_event_register
+from models import InstantEvent, RangedEvent
+
+__instant_events: dict[int, str] = {
     1: "blocking_on_queue_peek",
     2: "blocking_on_queue_receive",
     3: "blocking_on_queue_send",
@@ -65,8 +68,6 @@ name_events: dict[int, str] = {
     64: "task_resume",
     65: "task_resume_from_isr",
     66: "task_suspend",
-    67: "task_switched_in",
-    68: "task_switched_out",
     69: "timer_command_received",
     70: "timer_command_send",
     71: "timer_create",
@@ -77,3 +78,14 @@ name_events: dict[int, str] = {
     76: "stream_buffer_create_static_failed",
     77: "stream_buffer_delete",
 }
+
+def task_switched_handler(self: RangedEvent, instant_events: list[InstantEvent]):
+    for instant_event in instant_events:
+        if (self.start.timestamp <= instant_event.timestamp <= self.stop.timestamp
+                and instant_event.event_id == 26):
+            self.related_instant_events.append(instant_event)
+
+def init_event_mapping():
+    instant_event_register.register_events(__instant_events)
+    ranged_event_register.register_event(67, "task_switched", [68], task_switched_handler)
+    ranged_event_register.register_event(68, "task_switched_out", [])
