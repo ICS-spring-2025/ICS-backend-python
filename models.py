@@ -1,8 +1,54 @@
 import copy
 from ctypes import LittleEndianStructure, addressof, c_uint8, c_uint32, c_uint64, memmove, sizeof
 
+class InstantEvent:
+    def __init__(self, event_id, timestamp, data, name):
+        self.event_id = event_id
+        self.timestamp = timestamp
+        self.data = data
+        self.name = name if name else f"event_{event_id}"
 
-class InstantEvent(LittleEndianStructure):
+    def to_dict(self):
+        return {"event_id": self.event_id, "name": self.name, "timestamp": self.timestamp, "data": self.data}
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(timestamp={self.timestamp}, event_id={self.event_id}, data={self.data})"
+
+    def __hash__(self):
+        return id(self)
+
+
+class RangedEvent:
+    def __init__(self, start: InstantEvent, stop: InstantEvent):
+        self.start = start
+        self.stop = stop
+        self.related_instant_events = []
+
+    def related_instant_events_handler(self, instant_events: list[InstantEvent]):
+        for instant_event in instant_events:
+            if self.start.timestamp <= instant_event.timestamp <= self.stop.timestamp:
+                self.related_instant_events.append(instant_event)
+
+    def get_related_instant_events(self):
+        return [event.to_dict() for event in self.related_instant_events]
+
+    def to_dict(self):
+        return {"start": self.start.to_dict(), "stop": self.stop.to_dict()}
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(timestamp={self.timestamp}, event_id={self.event_id}, data={self.data})"
+
+    def __hash__(self):
+        return id(self)
+
+
+class Event(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ("timestamp", c_uint64),
@@ -110,13 +156,13 @@ class _DumpIter:
 
         while True:
             try:
-                log = self.file.read(sizeof(InstantEvent))
+                log = self.file.read(sizeof(Event))
                 if not log:
                     raise StopIteration
-                if len(log) < sizeof(InstantEvent):
+                if len(log) < sizeof(Event):
                     raise StopIteration
-                instant_event = InstantEvent()
-                memmove(addressof(instant_event), log, sizeof(InstantEvent))
+                instant_event = Event()
+                memmove(addressof(instant_event), log, sizeof(Event))
                 if instant_event.event_id == 0:
                     raise StopIteration  # NOTE: Предполагается dump по умолчанию заполнен нулями и сбытия с id = 0 не существует
                 if self._timestamp__gte is not None and instant_event.timestamp < self._timestamp__gte:

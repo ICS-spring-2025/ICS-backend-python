@@ -1,8 +1,9 @@
-
+from models import InstantEvent, RangedEvent
 from settings import instant_event_register, ranged_event_register
 
 _ier = instant_event_register
 _rer = ranged_event_register
+
 
 def get_started_event_for_stop_event(started_events, stop_event_id):
     possible_begins = _rer.get_possible_begins(stop_event_id)
@@ -32,107 +33,114 @@ def instant(iterator):
             yield event, data
             continue
         # print(f"instant {event}, {data}")
-        data["instant"] = event
+        data["instant"] = InstantEvent(
+            event_id=event.event_id,
+            timestamp=event.timestamp,
+            data=event.data,
+            name=_ier.get_event_name(event.event_id),
+        )
         yield event, data
 
 
 def ranged(iterator):
     started_events = set()
-    for event, data in iterator:
-        event_id = event.event_id
-        if not event:
-            yield event, data
-            continue
-        if event_id not in _rer:
-            yield event, data
-            continue
-        elif started_event := get_started_event_for_stop_event(started_events, event_id):
-            started_events.remove(started_event)
-            ranged_data = {"start": started_event, "stop": event}
-            data["ranged"] = ranged_data
-            yield event, data
-            continue
-        elif _rer.get_possible_ends(event_id):
-            started_events.add(event)
-            yield event, data
-            continue
-        else:
-            raise Exception(f"RangedEvent {event} don't have start and end")
-    yield None, {"ranged.partial": started_events }
-
-
-def ranged_extended(iterator):
-    started_events = set()
-    info = dict()
     stoped_events = set()
     for event, data in iterator:
         event_id = event.event_id
         if not event:
             yield event, data
             continue
-        if event_id in _ier:
-            for started_event in started_events:
-                event_dict = event.to_dict()
-                event_dict["name"] = _ier.get_event_name(event_id)
-                info[started_event].append(event_dict)
-            yield event, data
-            continue
         if event_id not in _rer:
             yield event, data
             continue
         elif started_event := get_started_event_for_stop_event(started_events, event_id):
-            ranged_data = {"start": started_event, "stop": event, "info": info[started_event]}
             started_events.remove(started_event)
-            info.pop(started_event)
-            data["ranged_extended"] = ranged_data
+            data["ranged"] = RangedEvent(
+                start=started_event,
+                stop=InstantEvent(
+                    event_id=event.event_id,
+                    timestamp=event.timestamp,
+                    data=event.data,
+                    name=_rer.get_event_name(event.event_id),
+                )
+            )
             yield event, data
             continue
         elif _rer.get_possible_ends(event_id):
-            started_events.add(event)
-            info[event] = list()
+            started_events.add(
+                InstantEvent(
+                    event_id=event.event_id,
+                    timestamp=event.timestamp,
+                    data=event.data,
+                    name=_rer.get_event_name(event.event_id),
+                )
+            )
             yield event, data
             continue
         elif _rer.get_possible_begins(event_id):
-            stoped_events.add(event)
+            stoped_events.add(
+                InstantEvent(
+                    event_id=event.event_id,
+                    timestamp=event.timestamp,
+                    data=event.data,
+                    name=_rer.get_event_name(event.event_id),
+                )
+            )
             continue
         else:
             raise Exception(f"RangedEvent {event} don't have start and end")
-    yield None, {"ranged_extended.partial": started_events.union(stoped_events) }
+    yield None, {"ranged.partial": started_events.union(stoped_events) }
 
 
-# to_dict(ranged(instant(wrapper(Dump(<filename>)))))
-def to_dict(iterator):
+def to_arrays_by_type(iterator):
     res = {
         "instant": [],
         "ranged": [],
         "ranged.partial": []
     }
-    instant_events = {}
-    ranged_events = {}
-    ranged_partial_events = {}
     for event, data in iterator:
         if "instant" in data:
-            event_id = data["instant"].event_id
-            if event_id not in instant_events:
-                instant_events[event_id] = list()
-            instant_events[event_id].append((data["instant"].timestamp, data["instant"].data))
-        elif "ranged_extended" in data:
-            start_event = data["ranged_extended"]["start"]
-            if start_event.event_id not in ranged_events:
-                ranged_events[start_event.event_id] = list()
-            ranged_events[start_event.event_id].append(
-                (
-                    data["ranged_extended"]["start"].timestamp,
-                    data["ranged_extended"]["start"].data,
-                    data["ranged_extended"]["stop"].event_id,
-                    _rer.get_event_name(data["ranged_extended"]["stop"].event_id),
-                    data["ranged_extended"]["stop"].timestamp,
-                    data["ranged_extended"]["stop"].data,
-                    data["ranged_extended"]["info"],
-                )
+            res["instant"].append(data["instant"])
+        elif "ranged" in data:
+            res["ranged"].append(data["ranged"])
+        elif "ranged.partial" in data:
+            res["ranged_partial_events"] = data["ranged.partial"]
+    return res
+
+
+def format_v1(events_by_type):
+    res = {
+        "instant": [],
+        "ranged": [],
+        "ranged.partial": []
+    }
+
+    instant_events = {}
+    ranged_events = {}
+
+    for event in events_by_type["instant"]:
+        event_id = event.event_id
+        if event_id not in instant_events:
+            instant_events[event_id] = list()
+        instant_events[event_id].append((event.timestamp, event.data))
+
+    for event in events_by_type["ranged"]:
+        print(events_by_type["instant"])
+        event.related_instant_events_handler(events_by_type["instant"])
+        start_event = event.start
+        if start_event.event_id not in ranged_events:
+            ranged_events[start_event.event_id] = list()
+        ranged_events[start_event.event_id].append(
+            (
+                event.start.timestamp,
+                event.start.data,
+                event.stop.event_id,
+                _rer.get_event_name(event.stop.event_id),
+                event.stop.timestamp,
+                event.stop.data,
+                event.get_related_instant_events(),
             )
-        elif "ranged_extended.partial" in data:
-            ranged_partial_events = data["ranged_extended.partial"]
+        )
 
     for k, v in instant_events.items():
         res["instant"].append(
@@ -142,6 +150,7 @@ def to_dict(iterator):
                 "records": v,
             }
         )
+
     for k, v in ranged_events.items():
         res["ranged"].append(
             {
@@ -150,5 +159,5 @@ def to_dict(iterator):
                 "records": v,
             }
         )
-    res["ranged.partial"] = [event.to_dict() for event in list(ranged_partial_events)]
+
     return res
