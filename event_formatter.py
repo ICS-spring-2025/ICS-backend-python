@@ -126,7 +126,10 @@ def format_v1(events_by_type):
 
     for event in events_by_type["ranged"]:
         print(events_by_type["instant"])
-        event.related_instant_events_handler(events_by_type["instant"])
+        if handler := _rer.get_handler(event.start.event_id):
+            handler(event, events_by_type["instant"])
+        else:
+            event.related_instant_events_handler(events_by_type["instant"])
         start_event = event.start
         if start_event.event_id not in ranged_events:
             ranged_events[start_event.event_id] = list()

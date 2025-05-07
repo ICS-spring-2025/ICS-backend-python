@@ -27,11 +27,12 @@ class _RangedEventRegister:
         possible_begin_ids: set[int]
         possible_end_ids: set[int]
         name: str = None
+        handler = None
 
     def __init__(self):
         self.__events: dict[int, _RangedEventRegister._Event] = dict()
 
-    def register_event(self, event_id: int, name: str = None, possible_end_ids: list[int] = []):
+    def register_event(self, event_id: int, name: str = None, possible_end_ids: list[int] = [], handler=None):
         if name is None:
             raise ValueError("name cannot be None")
         if event_id in self.__events.keys() and self.__events[event_id].name is not None:
@@ -50,10 +51,11 @@ class _RangedEventRegister:
                 )
             else:
                 self.__events[event_end_id].possible_begin_ids.add(event_end_id)
+        self.__events[event_id].handler = handler
 
     def register_events(self, events: dict[int, tuple[str, list[int]]]):
         for key, value in events.items():
-            self.register_event(key, value[0], value[1])
+            self.register_event(key, value[0], value[1], value[2])
 
     def __contains__(self, item):
         return item in self.__events
@@ -66,6 +68,9 @@ class _RangedEventRegister:
 
     def get_possible_begins(self, event_id: int) -> set[int]:
         return self.__events[event_id].possible_begin_ids
+
+    def get_handler(self, event_id):
+        return self.__events[event_id].handler
 
 
 instant_event_register = _InstantEventRegister()
