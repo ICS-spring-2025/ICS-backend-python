@@ -79,11 +79,23 @@ __instant_events: dict[int, str] = {
     77: "stream_buffer_delete",
 }
 
+task_map = {
+    2148018752: "TX",
+    2148014528: "RX",
+    2148020928: "IDLE",
+    2148021696: "TMR"
+}
+
+
 def task_switched_handler(self: RangedEvent, instant_events: list[InstantEvent]):
     for instant_event in instant_events:
+        # print(instant_event)
         if (self.start.timestamp <= instant_event.timestamp <= self.stop.timestamp
                 and instant_event.event_id == 26):
             self.related_instant_events.append(instant_event)
+            self.start.data = task_map[instant_event.data]
+            self.stop.data = task_map[instant_event.data]
+
 
 def init_event_mapping():
     instant_event_register.register_events(__instant_events)
